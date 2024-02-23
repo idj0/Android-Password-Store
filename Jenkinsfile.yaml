@@ -1,0 +1,37 @@
+pipeline:
+  agent:
+    kubernetes:
+      yaml: |
+        spec:
+          containers:
+            - name: android-sdk
+              image: mobiledevops/android-sdk-image:34.0.0
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                runAsUser: 0
+              tty: true
+              command:
+                - cat
+
+  stages:
+    - stage: "Checkout"
+      steps:
+        script:
+          - |
+            git([
+                branch: "develop",
+                url: "https://github.com/idj0/Android-Password-Store"
+            ])
+    - stage: "Build"
+      steps:
+        script:
+          - container: "'android-sdk'"
+            script:
+              - sh './gradlew collectFreeDebugApks'
+              - |
+                archiveArtifacts(
+                  artifacts: 'app/outputs/*.apk',
+                  allowEmptyArchive: false,
+                  fingerprint: true,
+                  onlyIfSuccessful: true
+                )
